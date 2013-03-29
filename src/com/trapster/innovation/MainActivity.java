@@ -11,6 +11,8 @@ import android.os.Handler;
 import android.os.Looper;
 import android.widget.TextView;
 import com.trapster.innovation.comms.ELMCommunicator;
+import com.trapster.innovation.comms.ELMJobCallback;
+import com.trapster.innovation.comms.obd.OBDCommand;
 import com.trapster.innovation.comms.obd.protocol.SelectAutoProtocolCommand;
 import com.trapster.innovation.monitor.FuelConsumptionMonitor;
 import com.trapster.innovation.monitor.OBDMonitor;
@@ -149,7 +151,25 @@ public class MainActivity extends Activity
                     updateStatusText("Setting up ELM Communicator");
                     clientSocket.connect();
                     communicator = new ELMCommunicator(clientSocket);
-                    communicator.queueJob(new SelectAutoProtocolCommand(null));
+                    communicator.queueJob(new SelectAutoProtocolCommand(new ELMJobCallback()
+                    {
+                        @Override
+                        public void onError(String error)
+                        {
+                            updateStatusText(error);
+                        }
+
+                        @Override
+                        public void onComplete(OBDCommand command)
+                        {
+                            updateText(command.getResult());
+                        }
+
+                        @Override
+                        public void onProgressUpdate(String progress)
+                        {
+                        }
+                    }));
 
                     fuelConsumptionMonitor = new FuelConsumptionMonitor(communicator, new OBDMonitor.OBDMonitorCallback()
                     {
@@ -165,6 +185,14 @@ public class MainActivity extends Activity
                                 }
                             });
                         }
+
+                        @Override
+                        public void onError(String error)
+                        {
+                            updateStatusText(error);
+                        }
+
+
                     });
                     updateStatusText("Communicator is ready");
 

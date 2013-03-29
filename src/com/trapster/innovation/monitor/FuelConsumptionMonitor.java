@@ -43,13 +43,13 @@ public class FuelConsumptionMonitor extends OBDMonitor
 
     private void runCalculation()
     {
-        vehicleSpeed = (IDEAL_AIR_FUEL_RATIO * DENSITY_OF_GASOLINE * GRAMS_PER_POUND * vehicleSpeed * KPH_TO_MPH_CONVERSION) / (SECONDS_PER_HOUR * MAFRate / MAF_GRAMS_PER_SECOND);
+        currentConsumption = (IDEAL_AIR_FUEL_RATIO * DENSITY_OF_GASOLINE * GRAMS_PER_POUND * vehicleSpeed * KPH_TO_MPH_CONVERSION) / (SECONDS_PER_HOUR * MAFRate / MAF_GRAMS_PER_SECOND);
         callback.onResult(getResult());
     }
 
     private class MAFCommandCallback implements ELMJobCallback
     {
-        @Override public void onError(String error) {} @Override public void onProgressUpdate(String progress){}
+        @Override public void onError(String error) {callback.onError(error);} @Override public void onProgressUpdate(String progress){}
 
         @Override
         public void onComplete(OBDCommand command)
@@ -65,7 +65,7 @@ public class FuelConsumptionMonitor extends OBDMonitor
 
     private class VehicleSpeedCallback implements ELMJobCallback
     {
-        @Override public void onError(String error) {} @Override public void onProgressUpdate(String progress){}
+        @Override public void onError(String error) {callback.onError(error);} @Override public void onProgressUpdate(String progress){}
 
         @Override
         public void onComplete(OBDCommand command)

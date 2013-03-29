@@ -41,7 +41,7 @@ public class ELMCommunicator
                 inputStream = clientSocket.getInputStream();
                 outputStream = clientSocket.getOutputStream();
 
-                outputStream.write("AT Z".getBytes());  // Reset state
+                //outputStream.write("AT Z".getBytes());  // Reset state
 
                 readyForJobs = true;
 

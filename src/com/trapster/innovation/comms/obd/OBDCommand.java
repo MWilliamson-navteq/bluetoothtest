@@ -12,7 +12,7 @@ public abstract class OBDCommand
     private String command;
     protected String rawData;
     private ELMJobCallback callback;
-    private final static long INPUT_TIMEOUT = 4000;
+    private final static long INPUT_TIMEOUT = 400000;
     protected ArrayList<Integer> doubleByteBuffer = new ArrayList<Integer>();
     protected ArrayList<Integer> singleByteBuffer = new ArrayList<Integer>();
 
@@ -70,10 +70,13 @@ public abstract class OBDCommand
         long currentTime = System.currentTimeMillis();
         long startTime = currentTime;
 
+        int numberToSkip = command.replaceAll(" ", "").length(); // Replace 01 01/r to 0101 and get it's length
+        in.skip(numberToSkip);
+
         // read until '>' arrives
         while ((startTime + INPUT_TIMEOUT > currentTime) && (char) (b = (byte) in.read()) != '>')
         {
-            if ((char) b != ' ')
+            if ((char) b != ' ' && (char)b != '\r')
             {
                 res.append((char) b);
             }
@@ -94,6 +97,7 @@ public abstract class OBDCommand
         rawData = res.toString().trim();
 
         // clear buffer
+        singleByteBuffer.clear();
         doubleByteBuffer.clear();
 
         // Parse out the double-byte strings and decode them
@@ -104,18 +108,24 @@ public abstract class OBDCommand
         for (int i = 0; i < rawData.length(); i++)
         {
             String temp = "0x" + rawData.charAt(i);
-            singleByteBuffer.add(Integer.decode(temp));
+            try
+            {
+                singleByteBuffer.add(Integer.decode(temp));
+            }
+            catch (NumberFormatException e){}
         }
 
         while (end <= rawData.length())
         {
             String temp = "0x" + rawData.substring(begin, end);
-            doubleByteBuffer.add(Integer.decode(temp));
+            try
+            {
+                doubleByteBuffer.add(Integer.decode(temp));
+            }
+            catch (NumberFormatException e){}
             begin = end;
             end += 2;
         }
-
-
     }
 
     protected abstract void processBuffer();

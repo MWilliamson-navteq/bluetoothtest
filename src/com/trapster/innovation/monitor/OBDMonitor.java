@@ -10,6 +10,7 @@ public abstract class OBDMonitor implements Runnable
     public OBDMonitor(ELMCommunicator communicator, OBDMonitorCallback callback)
     {
         this.communicator = communicator;
+        this.callback = callback;
     }
 
     public abstract double getResult();
@@ -17,5 +18,7 @@ public abstract class OBDMonitor implements Runnable
     public interface OBDMonitorCallback
     {
         public void onResult(double result);
+        public void onError(String error);
     }
+
 }
