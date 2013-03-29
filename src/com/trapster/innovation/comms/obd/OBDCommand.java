@@ -12,8 +12,9 @@ public abstract class OBDCommand
     private String command;
     protected String rawData;
     private ELMJobCallback callback;
-    private final static long INPUT_TIMEOUT = 1500;
-    protected ArrayList<Integer> buffer = new ArrayList<Integer>();
+    private final static long INPUT_TIMEOUT = 4000;
+    protected ArrayList<Integer> doubleByteBuffer = new ArrayList<Integer>();
+    protected ArrayList<Integer> singleByteBuffer = new ArrayList<Integer>();
 
     public OBDCommand(String command, ELMJobCallback callback)
     {
@@ -29,14 +30,23 @@ public abstract class OBDCommand
             sendCommand(out);
             readResult(in);
             processBuffer();
+            if (callback != null)
+                callback.onComplete(this);
         }
         catch (IOException e)
         {
-            callback.onError(e.toString());
+            if (callback != null)
+                callback.onError(e.toString());
         }
         catch (InterruptedException e)
         {
-            callback.onError(e.toString());
+            if (callback != null)
+                callback.onError(e.toString());
+        }
+        catch (Exception e)
+        {
+            if (callback != null)
+                callback.onError(e.toString());
         }
 
     }
@@ -50,7 +60,6 @@ public abstract class OBDCommand
         out.write(command.getBytes());
         out.flush();
 
-        callback.onProgressUpdate("Sending Command: " + command);
         Thread.sleep(200);
     }
 
@@ -62,12 +71,11 @@ public abstract class OBDCommand
         long startTime = currentTime;
 
         // read until '>' arrives
-        while ((startTime + INPUT_TIMEOUT < currentTime) && (char) (b = (byte) in.read()) != '>')
+        while ((startTime + INPUT_TIMEOUT > currentTime) && (char) (b = (byte) in.read()) != '>')
         {
             if ((char) b != ' ')
             {
                 res.append((char) b);
-                callback.onProgressUpdate(res.toString().trim());
             }
 
             currentTime = System.currentTimeMillis();
@@ -86,20 +94,31 @@ public abstract class OBDCommand
         rawData = res.toString().trim();
 
         // clear buffer
-        buffer.clear();
+        doubleByteBuffer.clear();
 
-        // read string each two chars
+        // Parse out the double-byte strings and decode them
         int begin = 0;
         int end = 2;
+
+        // Parse out the single-byte strings and decode them
+        for (int i = 0; i < rawData.length(); i++)
+        {
+            String temp = "0x" + rawData.charAt(i);
+            singleByteBuffer.add(Integer.decode(temp));
+        }
+
         while (end <= rawData.length())
         {
             String temp = "0x" + rawData.substring(begin, end);
-            buffer.add(Integer.decode(temp));
+            doubleByteBuffer.add(Integer.decode(temp));
             begin = end;
             end += 2;
         }
+
+
     }
 
     protected abstract void processBuffer();
     public abstract String getResult();
+    public abstract double getValue();
 }

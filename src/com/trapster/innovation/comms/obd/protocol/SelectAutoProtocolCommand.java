@@ -7,7 +7,7 @@ public class SelectAutoProtocolCommand extends OBDCommand
 {
     public SelectAutoProtocolCommand(ELMJobCallback callback)
     {
-        super("AT S0", callback);
+        super("AT SP 0", callback);
     }
 
     @Override
@@ -20,5 +20,11 @@ public class SelectAutoProtocolCommand extends OBDCommand
     public String getResult()
     {
         return rawData;
+    }
+
+    @Override
+    public double getValue()
+    {
+        return -1;
     }
 }

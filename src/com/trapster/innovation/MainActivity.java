@@ -11,18 +11,16 @@ import android.os.Handler;
 import android.os.Looper;
 import android.widget.TextView;
 import com.trapster.innovation.comms.ELMCommunicator;
-import com.trapster.innovation.comms.ELMJobCallback;
-import com.trapster.innovation.comms.obd.OBDCommand;
-import com.trapster.innovation.comms.obd.engine.EngineCoolantTemperatureCommand;
 import com.trapster.innovation.comms.obd.protocol.SelectAutoProtocolCommand;
+import com.trapster.innovation.monitor.FuelConsumptionMonitor;
+import com.trapster.innovation.monitor.OBDMonitor;
 
 import java.io.IOException;
-import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.Set;
 import java.util.UUID;
 
-public class MainActivity extends Activity implements ELMJobCallback
+public class MainActivity extends Activity
 {
 
     private BluetoothAdapter adapter;
@@ -32,14 +30,11 @@ public class MainActivity extends Activity implements ELMJobCallback
     private BluetoothSocket clientSocket;
     private Handler handler = new Handler(Looper.getMainLooper());
 
-    private ArrayList<String> inputStrings = new ArrayList<String>();
-
-    private int lastStringCount = 0;
     private TextView textView;
     private TextView statusText;
 
     private ELMCommunicator communicator;
-    private final ELMJobCallback callback = this;
+    private FuelConsumptionMonitor fuelConsumptionMonitor;
 
 
     @Override
@@ -154,13 +149,39 @@ public class MainActivity extends Activity implements ELMJobCallback
                     updateStatusText("Setting up ELM Communicator");
                     clientSocket.connect();
                     communicator = new ELMCommunicator(clientSocket);
-                    communicator.queueJob(new SelectAutoProtocolCommand(callback));
-                    handler.post(updateFuelConsumptionRunnable);
+                    communicator.queueJob(new SelectAutoProtocolCommand(null));
+
+                    fuelConsumptionMonitor = new FuelConsumptionMonitor(communicator, new OBDMonitor.OBDMonitorCallback()
+                    {
+                        @Override
+                        public void onResult(final double result)
+                        {
+                            handler.post(new Runnable()
+                            {
+                                @Override
+                                public void run()
+                                {
+                                    updateStatusText("Current consumption is: " + result);
+                                }
+                            });
+                        }
+                    });
                     updateStatusText("Communicator is ready");
+
+                    while (!isFinishing())
+                    {
+                        fuelConsumptionMonitor.run();
+                        Thread.sleep(1000);
+                    }
                 }
                 catch (IOException e)
                 {
                     updateStatusText("Socket error");
+                    e.printStackTrace();
+                }
+                catch (InterruptedException e)
+                {
+                    updateStatusText("Interrupted Exception");
                     e.printStackTrace();
                 }
                 return null;
@@ -192,39 +213,5 @@ public class MainActivity extends Activity implements ELMJobCallback
                 textView.append(text);
             }
         });
-    }
-
-    private Runnable updateFuelConsumptionRunnable = new Runnable()
-    {
-        @Override
-        public void run()
-        {
-            if (communicator != null)
-            {
-                updateStatusText("Posting new job");
-                communicator.queueJob(new EngineCoolantTemperatureCommand(callback));
-            }
-
-            handler.postDelayed(this, 2000);
-        }
-    };
-
-    @Override
-    public void onError(String error)
-    {
-        updateText(error);
-    }
-
-    @Override
-    public void onComplete(OBDCommand command)
-    {
-        updateText(command.getResult());
-
-    }
-
-    @Override
-    public void onProgressUpdate(String progress)
-    {
-        updateText(String.valueOf(progress));
     }
 }
