@@ -43,7 +43,10 @@ public class FuelConsumptionMonitor extends OBDMonitor
 
     private void runCalculation()
     {
-        currentConsumption = (IDEAL_AIR_FUEL_RATIO * DENSITY_OF_GASOLINE * GRAMS_PER_POUND * vehicleSpeed * KPH_TO_MPH_CONVERSION) / (SECONDS_PER_HOUR * MAFRate / MAF_GRAMS_PER_SECOND);
+        if (MAFRate > 0)
+            currentConsumption = (IDEAL_AIR_FUEL_RATIO * DENSITY_OF_GASOLINE * GRAMS_PER_POUND * vehicleSpeed * KPH_TO_MPH_CONVERSION) / (SECONDS_PER_HOUR * MAFRate / MAF_GRAMS_PER_SECOND);
+        else
+            currentConsumption = 0.0;
         callback.onResult(getResult());
     }
 
