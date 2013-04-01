@@ -17,8 +17,8 @@ public class MAFAIrFlowRateCommand extends OBDCommand
     {
         // Response should be 41 10 XX, therefore our value is the 4th and 5th cells
 
-        int firstValue = singleByteBuffer.get(4);
-        int secondValue = singleByteBuffer.get(5);
+        int firstValue = singleByteBuffer.get(1);
+        int secondValue = singleByteBuffer.get(2);
         flowRate = ((firstValue * 256) + secondValue) / 100.0;
 
     }

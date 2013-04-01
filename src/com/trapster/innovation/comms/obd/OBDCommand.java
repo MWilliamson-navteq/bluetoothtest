@@ -70,8 +70,8 @@ public abstract class OBDCommand
         long currentTime = System.currentTimeMillis();
         long startTime = currentTime;
 
-        int numberToSkip = command.replaceAll(" ", "").length(); // Replace 01 01/r to 0101 and get it's length
-        in.skip(numberToSkip);
+        //int numberToSkip = command.replaceAll(" ", "").length(); // Replace 01 01/r to 0101 and get it's length
+        //in.skip(numberToSkip);
 
         // read until '>' arrives
         while ((startTime + INPUT_TIMEOUT > currentTime) && (char) (b = (byte) in.read()) != '>')
@@ -84,6 +84,18 @@ public abstract class OBDCommand
             currentTime = System.currentTimeMillis();
         }
 
+        String response = "";
+        String trimmedCommand = command.replaceAll(" ", "").replaceAll("\r", "");
+        int commandReply = -1;
+        commandReply = res.indexOf(trimmedCommand);
+        if (commandReply >= 0)
+            res.delete(commandReply, commandReply + trimmedCommand.length());
+        int numberToSkip = trimmedCommand.length();
+        String confirmation = res.substring(0, numberToSkip);
+        trimmedCommand = trimmedCommand.replaceFirst("0", "4");
+        if (trimmedCommand.equals(confirmation))
+            response = res.substring(numberToSkip, res.length());
+
 
         /*
            * Imagine the following response 41 0c 00 0d.
@@ -94,7 +106,7 @@ public abstract class OBDCommand
            * some more processing..
            */
         //
-        rawData = res.toString().trim();
+        rawData = response;
 
         // clear buffer
         singleByteBuffer.clear();
