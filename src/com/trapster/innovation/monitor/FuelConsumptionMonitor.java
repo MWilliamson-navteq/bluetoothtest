@@ -3,6 +3,8 @@ package com.trapster.innovation.monitor;
 import com.trapster.innovation.comms.ELMCommunicator;
 import com.trapster.innovation.comms.ELMJobCallback;
 import com.trapster.innovation.comms.obd.OBDCommand;
+import com.trapster.innovation.comms.obd.engine.MAPCommand;
+import com.trapster.innovation.comms.obd.engine.RPMCommand;
 import com.trapster.innovation.comms.obd.engine.VehicleSpeedCommand;
 import com.trapster.innovation.comms.obd.fuel.MAFAIrFlowRateCommand;
 
@@ -10,10 +12,15 @@ public class FuelConsumptionMonitor extends OBDMonitor
 {
     private MAFAIrFlowRateCommand mafaIrFlowRateCommand = new MAFAIrFlowRateCommand(new MAFCommandCallback());
     private VehicleSpeedCommand vehicleSpeedCommand = new VehicleSpeedCommand(new VehicleSpeedCallback());
+    private MAPCommand mapCommand = new MAPCommand(new MAPCallback());
+    private RPMCommand rpmCommand = new RPMCommand(new RPMCallback());
 
     private double currentConsumption = -1; // MPG
     private double MAFRate = -1;
     private double vehicleSpeed = -1;
+    private double manifoldPressure = -1;
+    private double rpm = -1;
+
 
     // Constants
     private final static double IDEAL_AIR_FUEL_RATIO = 14.7; // grams of air :: grams of gas
@@ -39,6 +46,7 @@ public class FuelConsumptionMonitor extends OBDMonitor
     {
         communicator.queueJob(mafaIrFlowRateCommand);
         communicator.queueJob(vehicleSpeedCommand);
+        communicator.queueJob(mapCommand);
     }
 
     private void runCalculation()
@@ -75,6 +83,32 @@ public class FuelConsumptionMonitor extends OBDMonitor
         {
             vehicleSpeed = command.getValue();
             if (MAFRate != -1)
+                runCalculation();
+        }
+    }
+
+    private class MAPCallback implements ELMJobCallback
+    {
+        @Override public void onError(String error) {callback.onError(error);} @Override public void onProgressUpdate(String progress){}
+
+        @Override
+        public void onComplete(OBDCommand command)
+        {
+            manifoldPressure = command.getValue();
+            if (manifoldPressure != -1)
+                runCalculation();
+        }
+    }
+
+    private class RPMCallback implements ELMJobCallback
+    {
+        @Override public void onError(String error) {callback.onError(error);} @Override public void onProgressUpdate(String progress){}
+
+        @Override
+        public void onComplete(OBDCommand command)
+        {
+            rpm = command.getValue();
+            if (rpm != -1)
                 runCalculation();
         }
     }
