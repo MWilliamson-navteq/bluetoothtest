@@ -14,7 +14,7 @@ public class VehicleSpeedCommand extends OBDCommand
     @Override
     protected void processBuffer()
     {
-        speed = doubleByteBuffer.get(0);
+        speed = singleByteBuffer.get(0);
     }
 
     @Override
